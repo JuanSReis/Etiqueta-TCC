@@ -1,0 +1,192 @@
+/* src/App.css */
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.content-container {
+  display: grid;
+  grid-template-columns: 70% 30%;
+  width: 100%;
+  flex-grow: 1;
+}
+
+.editor-pane {
+  background-color: #e9e9e9;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+}
+
+.label-boundary {
+  background-color: #ffffff;
+  border: 1px solid #333;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.code-pane {
+  padding: 20px;
+  background-color: #2d2d2d;
+  color: #f1f1f1;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.code-pane h2 { margin-top: 0; }
+.code-pane textarea {
+  flex-grow: 1; background-color: #1e1e1e; color: #d4d4d4;
+  border: 1px solid #3c3c3c; border-radius: 4px; padding: 10px;
+  font-family: 'Courier New', Courier, monospace; font-size: 14px;
+  resize: none; white-space: pre;
+}
+.element {
+  position: absolute;
+  cursor: move;
+  padding: 0;
+  border: 1px dashed transparent;
+  min-width: 20px;
+  user-select: none;
+  font-family: sans-serif;
+  line-height: 1;
+  display: inline-block;
+  font-weight: bold; /* ADICIONADO: Deixa o texto do elemento em negrito */
+}
+
+.element:hover { border-color: #007bff; }
+.element.dragging {
+  border-color: #007bff; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000;
+}
+.element:focus {
+  cursor: text; border-color: #28a745; border-style: solid;
+}
+
+.element.selected {
+  border-style: solid;
+  border-color: #007bff;
+}
+
+.element-input {
+  position: absolute;
+  padding: 2px 5px;
+  border: 1px solid #007bff;
+  z-index: 1001;
+  box-sizing: border-box;
+  font-family: sans-serif;
+  font-weight: bold; /* ADICIONADO: Deixa o texto em negrito durante a edição */
+}
+
+.line-container { position: absolute; pointer-events: none; }
+.line-element { stroke: #333; stroke-width: 2; }
+.line-handle { position: absolute; width: 12px; height: 12px; background-color: white; border: 2px solid #007bff; border-radius: 50%; cursor: grab; transform: translate(-50%, -50%); z-index: 1002; }
+.line-handle:active { cursor: grabbing; }
+.line-body { position: absolute; cursor: move; /* padding: 5px; transform: translate(-5px, -5px); */ z-index: 1001; }
+.square-element { position: absolute; border: 2px solid #333; cursor: move; box-sizing: border-box; }
+.square-element:hover { border-color: #007bff; }
+.resize-handle { position: absolute; width: 14px; height: 14px; background-color: white; border: 2px solid #007bff; right: -8px; bottom: -8px; cursor: nwse-resize; z-index: 1003; }
+
+.snap-line {
+  position: absolute;
+  background-color: #ff4d4d;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.snap-line.vertical {
+  width: 1px;
+  top: 0;
+  height: 100%;
+}
+
+.snap-line.horizontal {
+  height: 1px;
+  left: 0;
+  width: 100%;
+}
+
+.qrcode-element {
+  position: absolute;
+  cursor: move;
+  padding: 5px;
+  background-color: white;
+  border: 1px dashed transparent;
+  box-sizing: border-box;
+}
+
+.qrcode-element:hover {
+  border-color: #007bff;
+}
+
+.qrcode-element.selected {
+  border-style: solid;
+  border-color: #007bff;
+  box-shadow: 0 0 0 1px white, 0 0 0 2px #007bff;
+}
+
+.qrcode-element .resize-handle {
+  z-index: 1004;
+}
+
+/* Adicione estas classes ao final do seu src/App.css */
+
+.code-pane {
+  /* Altera o display para flex e permite que as seções internas cresçam */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.zpl-import-section, .zpl-generation-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Ajuda no controle de overflow em flex containers */
+}
+
+.zpl-import-section {
+  flex-basis: 30%; /* Ocupa 30% da altura do painel */
+}
+
+.zpl-generation-section {
+  flex-basis: 70%; /* Ocupa 70% da altura do painel */
+}
+
+.zpl-import-section textarea {
+  height: 100px; /* Altura fixa para o campo de importação */
+  resize: vertical;
+  margin-bottom: 10px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  padding: 10px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.zpl-import-section button {
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  border: 1px solid #0069d9;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  align-self: flex-start; /* Alinha o botão à esquerda */
+}
+
+.zpl-import-section button:hover {
+  background-color: #0069d9;
+}
