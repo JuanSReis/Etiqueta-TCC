@@ -4,18 +4,138 @@ body {
   margin: 0;
   font-family: sans-serif;
 }
-
+/* Modifique a classe app-container */
 .app-container {
+  display: grid;
+  /* Define a Sidebar na esquerda e o resto à direita */
+  grid-template-columns: 80px 1fr; 
+  grid-template-rows: 60px 1fr; /* Define a Top Toolbar no topo */
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+:root {
+  --sidebar-bg: #1a202c;       /* Azul escuro profissional */
+  --sidebar-hover: #2d3748;    /* Azul um pouco mais claro para hover */
+  --sidebar-active: #3182ce;   /* Azul destaque para o item selecionado */
+  --icon-color: #a0aec0;       /* Cor suave para ícones não selecionados */
+  --danger-soft: #c53030;      /* Vermelho menos "aceso" */
+}
+
+.sidebar {
+  grid-row: 1 / 3;
+  grid-column: 1;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid #10141d;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  align-items: center;
+  padding: 20px 0;
+  gap: 12px;
+  z-index: 10;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.2);
 }
 
 .content-container {
   display: grid;
+  /* Divide o espaço restante: 70% para o editor e 30% para o código */
+  grid-template-columns: 70% 30%; 
+  flex-grow: 1; /* Ocupa todo o espaço que a Toolbar não usar */
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Ajuste a Toolbar para não sumir e ter uma largura definida */
+.toolbar {
+  width: 280px; /* Largura fixa para a barra lateral */
+  background-color: #ffffff;
+  padding: 15px;
+  border-right: 2px solid #ddd;
+  display: flex;
+  flex-direction: column; /* Itens um abaixo do outro */
+  gap: 15px;
+  height: 100vh;
+  overflow-y: auto; /* Permite rolar se houver muitos botões */
+  flex-shrink: 0;   /* Impede que a barra seja esmagada */
+}
+
+.content-container {
+  grid-row: 2;
+  grid-column: 2;
+  display: grid;
   grid-template-columns: 70% 30%;
-  width: 100%;
-  flex-grow: 1;
+  height: 100%;
+  overflow: hidden;
+}
+.sidebar button {
+  width: 50px; /* Reduzi um pouco para ficar mais elegante */
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  border-radius: 12px; /* Bordas mais arredondadas */
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #475569; /* Cor do ícone */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Tooltip simples ou indicação de hover */
+.sidebar button:hover {
+  background-color: var(--sidebar-hover);
+  color: #ffffff;
+}
+
+/* Estilo para quando o botão for o tipo selecionado */
+.sidebar button.active {
+  background-color: var(--sidebar-active);
+  color: white;
+  box-shadow: 0 0 15px rgba(49, 130, 206, 0.4);
+}
+
+/* Divisor elegante */
+.sidebar hr {
+  width: 30px;
+  border: 0;
+  border-top: 1px solid #2d3748;
+  margin: 10px 0;
+}
+
+/* Botão de limpar (Vermelho profissional/discreto) */
+.sidebar button.clear-button {
+  margin-top: auto; /* Empurra para o final da barra */
+  color: #fc8181;
+}
+
+.sidebar button.clear-button:hover {
+  background-color: var(--danger-soft) !important;
+  color: white !important;
+}
+
+.clear-button:hover {
+  background-color: #fee2e2 !important;
+  color: #dc3545 !important;
+  border-color: #dc3545 !important;
+}
+
+/* Garante que o ícone dentro do botão não quebre layout */
+.sidebar button svg {
+  flex-shrink: 0;
+}
+
+
+.top-toolbar {
+  grid-row: 1;
+  grid-column: 2;
+  background-color: #ffffff;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 20px;
 }
 
 .editor-pane {
@@ -189,4 +309,76 @@ body {
 
 .zpl-import-section button:hover {
   background-color: #0069d9;
+}
+
+/* src/App.css */
+
+.code-pane {
+  background-color: #0f172a; /* Azul quase preto, mais moderno que o cinza */
+  padding: 24px;
+  border-left: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.code-pane h2 {
+  color: #f1f5f9;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Estilização das seções de Importação e Geração */
+.zpl-import-section, .zpl-generation-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.code-pane textarea {
+  background-color: #1e293b !important;
+  color: #94a3b8 !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+  padding: 14px !important;
+  font-family: 'Fira Code', 'JetBrains Mono', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.code-pane textarea:focus {
+  border-color: var(--sidebar-active) !important;
+  color: #f1f5f9 !important;
+  outline: none;
+}
+
+/* Botão de Importar dentro do painel de código */
+.zpl-import-section button {
+  background-color: #334155;
+  color: #f1f5f9;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  align-self: flex-end; /* Alinha o botão à direita para um visual de "Ação" */
+  transition: all 0.2s;
+}
+
+.zpl-import-section button:hover {
+  background-color: var(--sidebar-active);
+}
+
+/* Scrollbar personalizada para o código (Opcional, mas dá o toque final) */
+.code-pane textarea::-webkit-scrollbar {
+  width: 8px;
+}
+.code-pane textarea::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
 }
