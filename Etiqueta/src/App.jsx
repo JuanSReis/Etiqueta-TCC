@@ -1,8 +1,12 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
+import { Download, Play, FileCode, Code2 } from 'lucide-react';
 import './App.css';
-import Toolbar from './components/Toolbar';
+import Toolbar from './components/toolbar';
+import { generateAdvplSource } from './utils/advplGenerator';
+
 
 // Constantes de Escala
 const DOTS_PER_MM = 8; // Para impressoras 203 DPI
@@ -44,6 +48,8 @@ function App() {
   const elementRefs = useRef({});
   const selectedElement = elements.find(el => el.id === selectedElementId);
 
+  const [generatedAdvpl, setGeneratedAdvpl] = useState("Código ADVPL aparecerá aqui...");
+
   useEffect(() => {
     if (selectedElement) {
       if (selectedElement.type === 'text') {
@@ -84,6 +90,46 @@ function App() {
   const handleAddFilledSquare = () => { setSelectedElementId(null); const newFilledSquare = { id: `filled-square-${Date.now()}`, type: 'filled-square', x: 80, y: 80, width: 120, height: 90, }; setElements(prev => [...prev, newFilledSquare]); };
   const handleAddQRCode = () => { setSelectedElementId(null); const newQRCode = { id: `qrcode-${Date.now()}`, type: 'qrcode', content: 'https://www.google.com', x: 50, y: 50, magnification: 5, }; setElements(prev => [...prev, newQRCode]); setSelectedElementId(newQRCode.id); };
 
+  // Dentro do App.js, atualize a função handlePositionChange
+  const handlePositionChange = (prop, value) => {
+    const numericValue = value === "" ? 0 : parseInt(value, 10);
+
+    if (selectedElementId) {
+      setElements((prev) =>
+        prev.map((el) => {
+          if (el.id === selectedElementId) {
+
+            // --- LÓGICA PARA QUADRADOS (Redimensionar via coordenada final) ---
+            if (el.type === 'square' || el.type === 'filled-square') {
+              if (prop === 'x') return { ...el, x: numericValue };
+              if (prop === 'y') return { ...el, y: numericValue };
+
+              // Se alterar X Final, mudamos a largura
+              if (prop === 'xFinal') {
+                const newWidth = Math.max(1, numericValue - el.x);
+                return { ...el, width: newWidth };
+              }
+              // Se alterar Y Final, mudamos a altura
+              if (prop === 'yFinal') {
+                const newHeight = Math.max(1, numericValue - el.y);
+                return { ...el, height: newHeight };
+              }
+            }
+
+            // --- LÓGICA PARA LINHAS (Pontos independentes) ---
+            if (el.type === 'line') {
+              // Atualiza diretamente a propriedade passada (x1, y1, x2, ou y2)
+              return { ...el, [prop]: numericValue };
+            }
+
+            // --- OUTROS ELEMENTOS (Texto, Barcode, etc) ---
+            return { ...el, [prop]: numericValue };
+          }
+          return el;
+        })
+      );
+    }
+  };
   const handleAddBarcode = () => {
     setSelectedElementId(null);
     const newBarcode = {
@@ -174,7 +220,7 @@ function App() {
           fontWidth: (fontSettings.w / DOTS_PER_MM) * PIXELS_PER_MM,
           content: content
         });
-      } else if (command === 'GB') { // Comando de caixa/linha gráfica
+      } else if (command === 'GB') {
         const [width_dots, height_dots, thickness_dots = 1] = data.split(',').map(Number);
         const isFilled = thickness_dots >= Math.min(width_dots, height_dots) && Math.min(width_dots, height_dots) > 0;
 
@@ -187,15 +233,44 @@ function App() {
             height: (height_dots / DOTS_PER_MM) * PIXELS_PER_MM,
           });
         } else {
-          newElements.push({
-            id: `square-${Date.now()}-${newElements.length}`,
-            type: 'square',
-            x: x_px, y: y_px,
-            width: (width_dots / DOTS_PER_MM) * PIXELS_PER_MM,
-            height: (height_dots / DOTS_PER_MM) * PIXELS_PER_MM,
-            thickness: (thickness_dots / DOTS_PER_MM) * PIXELS_PER_MM,
-          });
+          // Se a altura ou largura for muito pequena, o ZPL costuma usar GB para linhas retas
+          if (width_dots <= thickness_dots || height_dots <= thickness_dots) {
+            newElements.push({
+              id: `line-${Date.now()}-${newElements.length}`,
+              type: 'line',
+              x1: x_px,
+              y1: y_px,
+              x2: x_px + (width_dots / DOTS_PER_MM) * PIXELS_PER_MM,
+              y2: y_px + (height_dots / DOTS_PER_MM) * PIXELS_PER_MM,
+              thickness: (thickness_dots / DOTS_PER_MM) * PIXELS_PER_MM,
+            });
+          } else {
+            newElements.push({
+              id: `square-${Date.now()}-${newElements.length}`,
+              type: 'square',
+              x: x_px, y: y_px,
+              width: (width_dots / DOTS_PER_MM) * PIXELS_PER_MM,
+              height: (height_dots / DOTS_PER_MM) * PIXELS_PER_MM,
+              thickness: (thickness_dots / DOTS_PER_MM) * PIXELS_PER_MM,
+            });
+          }
         }
+      } else if (command === 'GD') { // COMANDO ESPECÍFICO DE LINHA DIAGONAL
+        const [width_dots, height_dots, thickness_dots, color, orientation] = data.split(',');
+        const w_px = (parseInt(width_dots) / DOTS_PER_MM) * PIXELS_PER_MM;
+        const h_px = (parseInt(height_dots) / DOTS_PER_MM) * PIXELS_PER_MM;
+        const t_px = (parseInt(thickness_dots) / DOTS_PER_MM) * PIXELS_PER_MM;
+
+        newElements.push({
+          id: `line-${Date.now()}-${newElements.length}`,
+          type: 'line',
+          x1: x_px,
+          y1: orientation === 'R' ? y_px + h_px : y_px,
+          x2: x_px + w_px,
+          y2: orientation === 'R' ? y_px : y_px + h_px,
+          thickness: t_px || 1,
+        })
+
       } else if (command === 'BC') {
         if ((i + 1) < commands.length) {
           const nextCmdRaw = commands[i + 1].trim();
@@ -261,10 +336,14 @@ function App() {
 
 
   const handleGenerateCode = () => {
+    // Validação inicial
     if (elements.length === 0) {
       setGeneratedCode("Adicione elementos na área de desenho primeiro.");
+      setGeneratedAdvpl("Adicione elementos na área de desenho primeiro.");
       return;
     }
+
+    // --- GERAÇÃO ZPL (Sua lógica existente) ---
     const zplCommands = elements.map(element => {
       const x_dots = Math.round((element.x / PIXELS_PER_MM) * DOTS_PER_MM);
       let y_dots = Math.round((element.y / PIXELS_PER_MM) * DOTS_PER_MM);
@@ -274,7 +353,7 @@ function App() {
         const font_width_dots = Math.round(element.fontWidth * (DOTS_PER_MM / PIXELS_PER_MM));
 
         const adjusted_y_dots = Math.round((y_dots + font_height_dots) * 0.92);
-        return `^FO${x_dots},${adjusted_y_dots}^A0N,${font_height_dots},${font_width_dots}^FD${element.content}^FS`;
+        return `^FO${x_dots},${adjusted_y_dots}^A0N,${font_height_dots},${font_width_dots}^FR^FD${element.content}^FS`;
       }
       if (element.type === 'line') {
         const x1_dots = Math.round((element.x1 / PIXELS_PER_MM) * DOTS_PER_MM);
@@ -304,35 +383,43 @@ function App() {
         const width_dots = Math.max(1, Math.round(element.width * (DOTS_PER_MM / PIXELS_PER_MM)));
         const height_dots = Math.max(1, Math.round(element.height * (DOTS_PER_MM / PIXELS_PER_MM)));
         const thickness_dots = Math.max(1, Math.round(element.thickness * (DOTS_PER_MM / PIXELS_PER_MM)));
-        return `^FO${x_dots},${y_dots}^GB${width_dots},${height_dots},${thickness_dots},B^FS`;
+        return `^FO${x_dots},${y_dots}^FR^GB${width_dots},${height_dots},${thickness_dots},B^FS`;
       }
       if (element.type === 'filled-square') {
         const width_dots = Math.max(1, Math.round((element.width / PIXELS_PER_MM) * DOTS_PER_MM));
         const height_dots = Math.max(1, Math.round((element.height / PIXELS_PER_MM) * DOTS_PER_MM));
-        return `^FO${x_dots},${y_dots}^GB${width_dots},${height_dots},${height_dots},B^FS`;
+        return `^FO${x_dots},${y_dots}^FR^GB${width_dots},${height_dots},${height_dots},B^FS`;
       }
       if (element.type === 'qrcode') {
-        return `^FO${x_dots},${y_dots}^BQN,2,${element.magnification}^FDLA,${element.content}^FS`;
+        return `^FO${x_dots},${y_dots}^BQN,2,${element.magnification}^FR^FDLA,${element.content}^FS`;
       }
       if (element.type === 'barcode') {
         const height_dots = Math.round(element.height * (DOTS_PER_MM / PIXELS_PER_MM));
         const show_text = element.showText ? 'Y' : 'N';
         const bar_width = Math.max(1, Math.min(10, element.barWidth));
-        const barcode_command = `^BY${bar_width}\n^FO${x_dots},${y_dots}^BCN,${height_dots},${show_text},N,N^FD${element.content}^FS`;
+        const barcode_command = `^BY${bar_width}\n^FO${x_dots},${y_dots}^FR^BCN,${height_dots},${show_text},N,N^FD${element.content}^FS`;
         return barcode_command;
       }
       return null;
     }).filter(cmd => cmd).join('\n');
 
     setGeneratedCode(`^XA\n${zplCommands}\n^XZ`);
+
+    // --- GERAÇÃO ADVPL (Nova Lógica) ---
+    // Chama a função importada e atualiza o novo estado
+    const advplSource = generateAdvplSource(elements);
+    setGeneratedAdvpl(advplSource);
   };
 
   const handleTextChange = (id, newContent) => { setElements(prev => prev.map(el => (el.id === id ? { ...el, content: newContent } : el))); };
   const handleFontSizeChange = (dimension, value) => { const numericValue = parseInt(value, 10) || 1; if (dimension === 'height') setFontHeight(numericValue); else setFontWidth(numericValue); if (selectedElementId) { setElements(prev => prev.map(el => { if (el.id === selectedElementId && el.type === 'text') { const finalValue = Math.max(1, numericValue); return dimension === 'height' ? { ...el, fontHeight: finalValue } : { ...el, fontWidth: finalValue }; } return el; })); } };
-
   const handleThicknessChange = (value) => {
     const numericValue = Math.max(1, parseInt(value, 10) || 1);
+
+    // Atualiza o estado do input
     setElementThickness(numericValue);
+
+    // Atualiza o elemento no array de elementos
     if (selectedElementId) {
       setElements(prev =>
         prev.map(el => {
@@ -458,10 +545,30 @@ function App() {
       }
 
       const finalEl = { ...newElements[draggedElIndex] };
-      if (handle === 'body' || handle === 'square-body' || handle === 'qrcode-body' || handle === 'barcode-body') { finalEl.x += movementX; finalEl.y += movementY; }
-      else if (handle === 'line-body') { finalEl.x1 += movementX; finalEl.y1 += movementY; finalEl.x2 += movementX; finalEl.y2 += movementY; }
-      else if (handle === 'start') { finalEl.x1 += e.movementX; finalEl.y1 += e.movementY; }
-      else if (handle === 'end') { finalEl.x2 += e.movementX; finalEl.y2 += e.movementY; }
+      const currentX = Number(finalEl.x) || 0;
+      const currentY = Number(finalEl.y) || 0;
+      const currentX1 = Number(finalEl.x1) || 0;
+      const currentY1 = Number(finalEl.y1) || 0;
+      const currentX2 = Number(finalEl.x2) || 0;
+      const currentY2 = Number(finalEl.y2) || 0;
+      if (handle === 'body' || handle === 'square-body' || handle === 'qrcode-body' || handle === 'barcode-body') {
+        finalEl.x = currentX + movementX;
+        finalEl.y = currentY + movementY;
+      }
+      else if (handle === 'line-body') {
+        finalEl.x1 = currentX1 + movementX;
+        finalEl.y1 = currentY1 + movementY;
+        finalEl.x2 = currentX2 + movementX;
+        finalEl.y2 = currentY2 + movementY;
+      }
+      else if (handle === 'start') {
+        finalEl.x1 = currentX1 + e.movementX;
+        finalEl.y1 = currentY1 + e.movementY;
+      }
+      else if (handle === 'end') {
+        finalEl.x2 = currentX2 + e.movementX;
+        finalEl.y2 = currentY2 + e.movementY;
+      }
       else if (handle === 'square-resize') { finalEl.width = Math.max(20, finalEl.width + e.movementX); finalEl.height = Math.max(20, finalEl.height + e.movementY); }
       else if (handle === 'qrcode-resize') {
         const currentSize = finalEl.magnification * 24;
@@ -482,7 +589,9 @@ function App() {
   return (
     <div className="app-container">
       <Toolbar
-        onAddText={handleAddText} onAddLine={handleAddLine} onAddSquare={handleAddSquare}
+        onAddText={handleAddText}
+        onAddLine={handleAddLine}
+        onAddSquare={handleAddSquare}
         onAddFilledSquare={handleAddFilledSquare}
         onAddQRCode={handleAddQRCode}
         onAddBarcode={handleAddBarcode}
@@ -503,24 +612,195 @@ function App() {
         onBarcodeChange={handleBarcodeChange}
         elementThickness={elementThickness}
         onThicknessChange={handleThicknessChange}
+        onPositionChange={handlePositionChange}
       />
       <div className="content-container" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
         <div className="editor-pane">
-          <div ref={labelBoundaryRef} className="label-boundary" style={{ width: `${labelWidthCm * 10 * PIXELS_PER_MM}px`, height: `${labelHeightCm * 10 * PIXELS_PER_MM}px` }}>
+          <div
+            ref={labelBoundaryRef}
+            className="label-boundary"
+            style={{
+              width: `${labelWidthCm * 10 * PIXELS_PER_MM}px`,
+              height: `${labelHeightCm * 10 * PIXELS_PER_MM}px`
+            }}
+          >
             {elements.map(element => {
               const setRef = (el) => { if (el) { elementRefs.current[element.id] = el; } };
               const isSelected = selectedElementId === element.id;
 
-              if (element.type === 'text') { const isEditing = editingId === element.id; const containerStyle = { left: `${element.x}px`, top: `${element.y}px`, fontFamily: element.font, fontSize: `${element.fontHeight}px`, }; const fontScaleX = element.fontWidth / (element.fontHeight * 1.21); const innerSpanStyle = { display: 'inline-block', transform: `scaleX(${fontScaleX})`, transformOrigin: 'top left', whiteSpace: 'nowrap', }; const inputStyle = { left: `${element.x}px`, top: `${element.y}px`, fontFamily: element.font, fontSize: `${element.fontHeight}px`, width: 'auto', }; return isEditing ? (<input key={element.id} type="text" value={element.content} onChange={e => handleTextChange(element.id, e.target.value)} onBlur={handleInputBlur} autoFocus className="element-input" style={inputStyle} />) : (<div key={element.id} ref={setRef} className={`element ${activeDrag?.elementId === element.id ? 'dragging' : ''} ${isSelected ? 'selected' : ''}`} style={containerStyle} onMouseDown={e => handleMouseDown(e, element.id, 'body')} onDoubleClick={() => handleDoubleClick(element.id)}> <span style={innerSpanStyle}>{element.content}</span> </div>); }
-              if (element.type === 'line') { const left = Math.min(element.x1, element.x2), top = Math.min(element.y1, element.y2); const width = Math.abs(element.x1 - element.x2), height = Math.abs(element.y1 - element.y2); return (<React.Fragment key={element.id}> <div ref={setRef} className={`line-container ${isSelected ? 'selected' : ''}`} style={{ left, top, width: width || 1, height: height || 1 }}><svg width={width || 1} height={height || 1} style={{ overflow: 'visible' }}><line x1={element.x1 - left} y1={element.y1 - top} x2={element.x2 - left} y2={element.y2 - top} className="line-element" style={{ strokeWidth: element.thickness }} /></svg></div> <div className="line-body" style={{ left, top, width, height, cursor: 'move', position: 'absolute', zIndex: 1001 }} onMouseDown={e => handleMouseDown(e, element.id, 'line-body')}></div> {isSelected && (<> <div className="line-handle" style={{ left: element.x1, top: element.y1 }} onMouseDown={e => handleMouseDown(e, element.id, 'start')}></div> <div className="line-handle" style={{ left: element.x2, top: element.y2 }} onMouseDown={e => handleMouseDown(e, element.id, 'end')}></div></>)} </React.Fragment>); }
-              if (element.type === 'square' || element.type === 'filled-square') { return (<div key={element.id} ref={setRef} className={`square-element ${isSelected ? 'selected' : ''}`} style={{ left: `${element.x}px`, top: `${element.y}px`, width: `${element.width}px`, height: `${element.height}px`, borderWidth: element.type === 'square' ? `${element.thickness}px` : '0px', backgroundColor: element.type === 'filled-square' ? '#333' : 'transparent', }} onMouseDown={e => handleMouseDown(e, element.id, 'square-body')}> {isSelected && <div className="resize-handle" onMouseDown={e => handleMouseDown(e, element.id, 'square-resize')}></div>} </div>); }
-              if (element.type === 'qrcode') { const qrSize = element.magnification * 13; return (<div key={element.id} ref={setRef} className={`qrcode-element ${isSelected ? 'selected' : ''}`} style={{ left: `${element.x}px`, top: `${element.y}px`, width: `${qrSize}px`, height: `${qrSize}px`, }} onMouseDown={e => handleMouseDown(e, element.id, 'qrcode-body')} > <QRCodeSVG value={element.content} size={qrSize} style={{ width: '100%', height: 'auto' }} /> {isSelected && <div className="resize-handle" onMouseDown={e => handleMouseDown(e, element.id, 'qrcode-resize')}></div>} </div>); }
+              // --- TEXTO ---
+              if (element.type === 'text') {
+                const isEditing = editingId === element.id;
+
+                const containerStyle = {
+                  left: `${element.x}px`,
+                  top: `${element.y}px`,
+                  fontFamily: element.font,
+                  fontSize: `${element.fontHeight}px`,
+                };
+
+                // Cálculo para escala horizontal da fonte
+                const fontScaleX = element.fontWidth / (element.fontHeight * 1.21);
+
+                const innerSpanStyle = {
+                  display: 'inline-block',
+                  transform: `scaleX(${fontScaleX})`,
+                  transformOrigin: 'top left',
+                  whiteSpace: 'nowrap',
+                };
+
+                const inputStyle = {
+                  left: `${element.x}px`,
+                  top: `${element.y}px`,
+                  fontFamily: element.font,
+                  fontSize: `${element.fontHeight}px`,
+                  width: 'auto',
+                };
+
+                return isEditing ? (
+                  <input
+                    key={element.id}
+                    type="text"
+                    value={element.content}
+                    onChange={e => handleTextChange(element.id, e.target.value)}
+                    onBlur={handleInputBlur}
+                    autoFocus
+                    className="element-input"
+                    style={inputStyle}
+                  />
+                ) : (
+                  <div
+                    key={element.id}
+                    ref={setRef}
+                    className={`element ${activeDrag?.elementId === element.id ? 'dragging' : ''} ${isSelected ? 'selected' : ''}`}
+                    style={containerStyle}
+                    onMouseDown={e => handleMouseDown(e, element.id, 'body')}
+                    onDoubleClick={() => handleDoubleClick(element.id)}
+                  >
+                    <span style={innerSpanStyle}>{element.content}</span>
+                  </div>
+                );
+              }
+
+              // --- LINHA ---
+              if (element.type === 'line') {
+                const left = Math.min(element.x1, element.x2);
+                const top = Math.min(element.y1, element.y2);
+                const width = Math.abs(element.x1 - element.x2);
+                const height = Math.abs(element.y1 - element.y2);
+
+                // Margem de segurança para evitar cortes no SVG se a linha for grossa
+                const padding = 20;
+
+                return (
+                  <React.Fragment key={element.id}>
+                    <div
+                      ref={setRef}
+                      className={`line-container ${isSelected ? 'selected' : ''}`}
+                      style={{
+                        left: left - padding, // Compensa o padding
+                        top: top - padding,
+                        width: width + (padding * 2), // Aumenta a área do SVG
+                        height: height + (padding * 2),
+                        zIndex: isSelected ? 1000 : 1 // Garante que a linha selecionada fique acessível
+                      }}
+                    >
+                      <svg
+                        width="100%"
+                        height="100%"
+                        style={{ overflow: 'visible' }}
+                      >
+                        {/* 1. LINHA INVISÍVEL (ÁREA DE CLIQUE) - GROSSA (20px) */}
+                        <line
+                          x1={(element.x1 - left) + padding}
+                          y1={(element.y1 - top) + padding}
+                          x2={(element.x2 - left) + padding}
+                          y2={(element.y2 - top) + padding}
+                          stroke="transparent"
+                          strokeWidth="20"  /* A mágica acontece aqui: área de clique enorme */
+                          style={{ cursor: 'move', pointerEvents: 'stroke' }}
+                          onMouseDown={(e) => handleMouseDown(e, element.id, 'line-body')}
+                        />
+
+                        {/* 2. LINHA VISÍVEL - FINA (A que será impressa) */}
+                        <line
+                          x1={(element.x1 - left) + padding}
+                          y1={(element.y1 - top) + padding}
+                          x2={(element.x2 - left) + padding}
+                          y2={(element.y2 - top) + padding}
+                          stroke="black"
+                          strokeWidth={element.thickness}
+                          style={{ pointerEvents: 'none' }} /* O clique passa por ela e vai para a invisível */
+                        />
+                      </svg>
+                    </div>
+
+                    {isSelected && (
+                      <>
+                        <div
+                          className="line-handle"
+                          style={{ left: element.x1, top: element.y1 }}
+                          onMouseDown={(e) => handleMouseDown(e, element.id, 'start')}
+                        ></div>
+                        <div
+                          className="line-handle"
+                          style={{ left: element.x2, top: element.y2 }}
+                          onMouseDown={(e) => handleMouseDown(e, element.id, 'end')}
+                        ></div>
+                      </>
+                    )}
+                  </React.Fragment>
+                );
+              }
+
+              // --- QUADRADOS (Vazio e Preenchido) ---
+              if (element.type === 'square' || element.type === 'filled-square') {
+                return (
+                  <div
+                    key={element.id}
+                    ref={setRef}
+                    className={`square-element ${isSelected ? 'selected' : ''}`}
+                    style={{
+                      left: `${element.x}px`,
+                      top: `${element.y}px`,
+                      width: `${element.width}px`,
+                      height: `${element.height}px`,
+                      borderWidth: element.type === 'square' ? `${element.thickness}px` : '0px',
+                      backgroundColor: element.type === 'filled-square' ? '#333' : 'transparent',
+                    }}
+                    onMouseDown={e => handleMouseDown(e, element.id, 'square-body')}
+                  >
+                    {isSelected && <div className="resize-handle" onMouseDown={e => handleMouseDown(e, element.id, 'square-resize')}></div>}
+                  </div>
+                );
+              }
+
+              // --- QR CODE ---
+              if (element.type === 'qrcode') {
+                const qrSize = element.magnification * 13;
+                return (
+                  <div
+                    key={element.id}
+                    ref={setRef}
+                    className={`qrcode-element ${isSelected ? 'selected' : ''}`}
+                    style={{
+                      left: `${element.x}px`,
+                      top: `${element.y}px`,
+                      width: `${qrSize}px`,
+                      height: `${qrSize}px`,
+                    }}
+                    onMouseDown={e => handleMouseDown(e, element.id, 'qrcode-body')}
+                  >
+                    <QRCodeSVG value={element.content} size={qrSize} style={{ width: '100%', height: 'auto' }} />
+                    {isSelected && <div className="resize-handle" onMouseDown={e => handleMouseDown(e, element.id, 'qrcode-resize')}></div>}
+                  </div>
+                );
+              }
+
+              // --- CÓDIGO DE BARRAS ---
               if (element.type === 'barcode') {
-                // --- INÍCIO DA CORREÇÃO ---
-                // AGORA a largura da barra (width) é controlada pelo `barWidth` do elemento,
-                // que vem do comando ^BY do ZPL importado. O valor 2 é um multiplicador visual.
+                // Cálculo visual da largura da barra para corresponder ao ZPL
                 const visualBarWidth = (element.barWidth || 2) * 0.75;
-                // --- FIM DA CORREÇÃO ---
 
                 return (
                   <div
@@ -539,7 +819,7 @@ function App() {
                     <Barcode
                       value={element.content}
                       height={element.height}
-                      width={visualBarWidth} // <-- USANDO O VALOR CORRIGIDO
+                      width={visualBarWidth}
                       displayValue={element.showText}
                       margin={0}
                       fontSize={14}
@@ -550,23 +830,62 @@ function App() {
               return null;
             })}
 
-            {snapLines.map((line, index) => { if (line.type === 'vertical') { return <div key={index} className="snap-line vertical" style={{ left: line.x }} />; } if (line.type === 'horizontal') { return <div key={index} className="snap-line horizontal" style={{ top: line.y }} />; } return null; })}
+            {/* --- LINHAS DE ALINHAMENTO (SNAP LINES) --- */}
+            {snapLines.map((line, index) => {
+              if (line.type === 'vertical') {
+                return <div key={index} className="snap-line vertical" style={{ left: line.x }} />;
+              }
+              if (line.type === 'horizontal') {
+                return <div key={index} className="snap-line horizontal" style={{ top: line.y }} />;
+              }
+              return null;
+            })}
           </div>
         </div>
         <div className="code-pane">
-          <div className="zpl-import-section">
-            <h2>Importar Código ZPL</h2>
-            <textarea
-              placeholder="Cole seu código ZPL aqui..."
-              value={zplToImport}
-              onChange={(e) => setZplToImport(e.target.value)}
-            />
-            <button onClick={handleZplImport}>Desenhar ZPL</button>
+          
+          {/* SEÇÃO 1: IMPORTAÇÃO */}
+          <div className="pane-section import-section">
+            <div className="section-header">
+              <h2><Download size={16} /> Importar ZPL</h2>
+              <button className="action-button secondary" onClick={handleZplImport}>
+                <Download size={14} /> Desenhar ZPL
+              </button>
+            </div>
+            <div className="textarea-wrapper">
+              <textarea
+                placeholder="Cole seu código ZPL aqui (^XA...^XZ)"
+                value={zplToImport}
+                onChange={(e) => setZplToImport(e.target.value)}
+                spellCheck="false"
+              />
+            </div>
           </div>
-          <div className="zpl-generation-section">
-            <h2>Código ZPL Gerado</h2>
-            <textarea readOnly value={generatedCode} />
+
+          {/* SEÇÃO 2: ZPL GERADO (Botão Gerar movido para cá) */}
+          <div className="pane-section output-section">
+            <div className="section-header">
+              <h2><FileCode size={16} /> Código ZPL Gerado</h2>
+              <button className="action-button primary" onClick={handleGenerateCode}>
+                <Play size={14} fill="currentColor" /> Gerar Código
+              </button>
+            </div>
+            <div className="textarea-wrapper">
+              <textarea readOnly value={generatedCode} spellCheck="false" />
+            </div>
           </div>
+
+          {/* SEÇÃO 3: ADVPL GERADO (Correção de Layout) */}
+          <div className="pane-section output-section flex-grow">
+            <div className="section-header">
+              <h2><Code2 size={16} /> Código ADVPL Gerado</h2>
+              {/* Botão de copiar opcional, se quiser adicionar futuramente */}
+            </div>
+            <div className="textarea-wrapper">
+              <textarea readOnly value={generatedAdvpl} spellCheck="false" />
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

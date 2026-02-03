@@ -1,5 +1,18 @@
 /* src/components/Toolbar.css */
 
+.top-toolbar .prop-row input {
+  width: 55px;
+  padding: 4px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.top-toolbar .prop-row label {
+  font-weight: bold;
+  margin-right: 2px;
+  color: #64748b;
+}
 .toolbar {
   background-color: #ffffff;
   padding: 20px 15px;
@@ -53,10 +66,9 @@
   gap: 12px;
   font-size: 14px;
 }
-
 .prop-row input[type="number"] {
-  width: 50px;
-  padding: 4px;
+  width: 65px !important; /* Aumenta um pouco para caber as setinhas do navegador */
+  padding-right: 2px;
 }
 
 .generate-button {
@@ -152,11 +164,11 @@
 }
 
 .qr-content-input {
-  width: 200px !important;
+  width: 400px !important;
 }
 
 .barcode-content-input {
-  width: 150px !important;
+  width: 400px !important;
 }
 
 .checkbox-group {
@@ -195,8 +207,30 @@
   gap: 25px;
   /* Sombra para dar profundidade sobre o editor */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
-  z-index: 11;
+  z-index: 100;
   font-family: 'Inter', sans-serif;
+  pointer-events: auto !important;
+}
+
+.prop-row input.manual-input {
+  width: 70px !important;
+  height: 30px;
+  min-height: 30px;
+  background: white !important;
+  color: black !important;
+  border: 1px solid #cbd5e1 !important;
+  cursor: text !important;
+  pointer-events: auto !important;
+}
+
+.prop-row input.qr-content-input {
+  width: 400px !important;
+  flex-shrink: 0; /* Garante que o input não encolha se a tela for pequena */
+}
+
+.prop-row input.barcode-content-input {
+  width: 400px !important;
+  flex-shrink: 0;
 }
 
 .input-group-horizontal label {
