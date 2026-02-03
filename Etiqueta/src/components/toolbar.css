@@ -16,21 +16,21 @@
 .toolbar {
   background-color: #ffffff;
   padding: 20px 15px;
-  border-right: 2px solid #ddd; /* Borda agora na direita */
-  border-bottom: none;          /* Remove a borda de baixo */
-  width: 260px;                 /* Largura fixa da barra lateral */
+  border-right: 2px solid #ddd; 
+  border-bottom: none;         
+  width: 260px;                
   height: 100vh;
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;       /* Alinhamento vertical */
+  flex-direction: column;       
   justify-content: flex-start;
   align-items: stretch;
   gap: 20px;
-  overflow-y: auto;             /* Scroll caso tenha muitos botões */
+  overflow-y: auto;             
 }
 .toolbar-left, .toolbar-center, .toolbar-right {
   display: flex;
-  flex-direction: column; /* Muda de linha para coluna */
+  flex-direction: column; 
   gap: 10px;
   width: 100%;
 }
@@ -67,7 +67,7 @@
   font-size: 14px;
 }
 .prop-row input[type="number"] {
-  width: 65px !important; /* Aumenta um pouco para caber as setinhas do navegador */
+  width: 65px !important; 
   padding-right: 2px;
 }
 
@@ -82,23 +82,23 @@
 }
 
 .input-group {
-  flex-direction: column; /* Label acima do Input para caber na lateral */
+  flex-direction: column; 
   align-items: flex-start !important;
 }
 
 .input-group input {
-  width: 100% !important; /* Inputs ocupam a largura da barra */
+  width: 100% !important; 
 }
 
 .font-size-group {
   margin-left: 0;
   padding-left: 0;
   border-left: none;
-  border-top: 1px solid #ddd; /* Divisor horizontal */
+  border-top: 1px solid #ddd; 
   padding-top: 10px;
   flex-direction: column;
 }
-/* Botões ocupando a largura total */
+
 .toolbar button {
   width: 100%;
   text-align: left;
@@ -199,13 +199,11 @@
   grid-row: 1;
   grid-column: 2;
   background-color: #ffffff;
-  /* Borda inferior mais marcada com a cor da paleta */
   border-bottom: 2px solid var(--sidebar-bg); 
   display: flex;
   align-items: center;
   padding: 0 24px;
   gap: 25px;
-  /* Sombra para dar profundidade sobre o editor */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
   z-index: 100;
   font-family: 'Inter', sans-serif;
@@ -225,7 +223,7 @@
 
 .prop-row input.qr-content-input {
   width: 400px !important;
-  flex-shrink: 0; /* Garante que o input não encolha se a tela for pequena */
+  flex-shrink: 0; 
 }
 
 .prop-row input.barcode-content-input {
@@ -256,12 +254,12 @@
   outline: none;
 }
 
-/* Deixando as propriedades dinâmicas mais profissionais */
+
 .prop-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #f1f5f9; /* Tom de azul acinzentado claro */
+  background: #f1f5f9; 
   padding: 8px 15px;
   border-radius: 10px;
 }
@@ -277,7 +275,6 @@
   background-color: #e2e8f0;
 }
 
-/* Botão Gerar ZPL atualizado */
 .generate-button {
   background-color: var(--sidebar-bg) !important;
   color: white !important;

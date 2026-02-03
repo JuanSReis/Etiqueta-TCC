@@ -8,10 +8,9 @@ import Toolbar from './components/toolbar';
 import { generateAdvplSource } from './utils/advplGenerator';
 
 
-// Constantes de Escala
-const DOTS_PER_MM = 8; // Para impressoras 203 DPI
-const PIXELS_PER_MM = 3.78; // Para telas ~96 DPI
-const SNAP_DISTANCE = 2; // Distância para o "snap" em pixels
+const DOTS_PER_MM = 8; 
+const PIXELS_PER_MM = 3.78; 
+const SNAP_DISTANCE = 2; 
 
 function App() {
   const [elements, setElements] = useState([]);
@@ -22,15 +21,12 @@ function App() {
   const [labelHeightCm, setLabelHeightCm] = useState(15);
   const [selectedElementId, setSelectedElementId] = useState(null);
 
-  // Estados para elementos de texto
   const [fontHeight, setFontHeight] = useState(50);
   const [fontWidth, setFontWidth] = useState(50);
 
-  // Estados para QR Code
   const [qrCodeContent, setQrCodeContent] = useState('');
   const [qrCodeMagnification, setQrCodeMagnification] = useState(5);
 
-  // Estados para Código de Barras
   const [barcodeContent, setBarcodeContent] = useState('123456');
   const [barcodeHeight, setBarcodeHeight] = useState(50);
   const [barcodeShowText, setBarcodeShowText] = useState(true);
@@ -38,9 +34,7 @@ function App() {
 
   const [elementThickness, setElementThickness] = useState(2);
 
-  // --- INÍCIO: ESTADO PARA IMPORTAÇÃO DE ZPL ---
   const [zplToImport, setZplToImport] = useState("");
-  // --- FIM: ESTADO PARA IMPORTAÇÃO DE ZPL ---
 
   const [snapLines, setSnapLines] = useState([]);
 
@@ -90,7 +84,6 @@ function App() {
   const handleAddFilledSquare = () => { setSelectedElementId(null); const newFilledSquare = { id: `filled-square-${Date.now()}`, type: 'filled-square', x: 80, y: 80, width: 120, height: 90, }; setElements(prev => [...prev, newFilledSquare]); };
   const handleAddQRCode = () => { setSelectedElementId(null); const newQRCode = { id: `qrcode-${Date.now()}`, type: 'qrcode', content: 'https://www.google.com', x: 50, y: 50, magnification: 5, }; setElements(prev => [...prev, newQRCode]); setSelectedElementId(newQRCode.id); };
 
-  // Dentro do App.js, atualize a função handlePositionChange
   const handlePositionChange = (prop, value) => {
     const numericValue = value === "" ? 0 : parseInt(value, 10);
 
@@ -99,30 +92,24 @@ function App() {
         prev.map((el) => {
           if (el.id === selectedElementId) {
 
-            // --- LÓGICA PARA QUADRADOS (Redimensionar via coordenada final) ---
             if (el.type === 'square' || el.type === 'filled-square') {
               if (prop === 'x') return { ...el, x: numericValue };
               if (prop === 'y') return { ...el, y: numericValue };
 
-              // Se alterar X Final, mudamos a largura
               if (prop === 'xFinal') {
                 const newWidth = Math.max(1, numericValue - el.x);
                 return { ...el, width: newWidth };
               }
-              // Se alterar Y Final, mudamos a altura
               if (prop === 'yFinal') {
                 const newHeight = Math.max(1, numericValue - el.y);
                 return { ...el, height: newHeight };
               }
             }
 
-            // --- LÓGICA PARA LINHAS (Pontos independentes) ---
             if (el.type === 'line') {
-              // Atualiza diretamente a propriedade passada (x1, y1, x2, ou y2)
               return { ...el, [prop]: numericValue };
             }
 
-            // --- OUTROS ELEMENTOS (Texto, Barcode, etc) ---
             return { ...el, [prop]: numericValue };
           }
           return el;
@@ -148,7 +135,6 @@ function App() {
 
   const handleClearAll = () => { setElements([]); setEditingId(null); setSelectedElementId(null); setGeneratedCode("Código ZPL aparecerá aqui..."); };
 
-  // --- INÍCIO: LÓGICA DE IMPORTAÇÃO ZPL CORRIGIDA ---
   const handleZplImport = () => {
     const newElements = [];
     let lastFO = { x: 0, y: 0 };
@@ -162,7 +148,6 @@ function App() {
       .split(/\^/g)
       .filter(cmd => cmd.trim() !== '');
 
-    // --- CORREÇÃO: MUDANÇA PARA O LAÇO 'for' TRADICIONAL PARA PULAR COMANDOS ---
     for (let i = 0; i < commands.length; i++) {
       const fullCmd = commands[i];
       const command = fullCmd.substring(0, 2);
@@ -210,7 +195,7 @@ function App() {
         const font_h_dots = fontSettings.h;
         const font_h_px = (font_h_dots / DOTS_PER_MM) * PIXELS_PER_MM;
 
-        const visual_y_px = (y_px - font_h_px) * 1.099; //Aqui faço um arredondamento no calculo pra arredondar o calculo de visualização
+        const visual_y_px = (y_px - font_h_px) * 1.099; 
         newElements.push({
           id: `text-${Date.now()}-${newElements.length}`,
           type: 'text',
@@ -233,7 +218,6 @@ function App() {
             height: (height_dots / DOTS_PER_MM) * PIXELS_PER_MM,
           });
         } else {
-          // Se a altura ou largura for muito pequena, o ZPL costuma usar GB para linhas retas
           if (width_dots <= thickness_dots || height_dots <= thickness_dots) {
             newElements.push({
               id: `line-${Date.now()}-${newElements.length}`,
@@ -255,7 +239,7 @@ function App() {
             });
           }
         }
-      } else if (command === 'GD') { // COMANDO ESPECÍFICO DE LINHA DIAGONAL
+      } else if (command === 'GD') { 
         const [width_dots, height_dots, thickness_dots, color, orientation] = data.split(',');
         const w_px = (parseInt(width_dots) / DOTS_PER_MM) * PIXELS_PER_MM;
         const h_px = (parseInt(height_dots) / DOTS_PER_MM) * PIXELS_PER_MM;
@@ -278,17 +262,10 @@ function App() {
           if (nextCmdRaw.startsWith('FD')) {
             const content = nextCmdRaw.substring(2);
 
-            // ^BCo,h,f,g,e,m
-            // o = orientação (index 0)
-            // h = altura (index 1)
-            // f = flag texto (index 2)
             const params = data.split(',');
 
-            // CORREÇÃO 1: A altura é o segundo parâmetro (index 1), não o primeiro
             const height_dots = parseInt(params[1], 10) || lastBY.height;
 
-            // CORREÇÃO 2: O flag de mostrar texto é o terceiro parâmetro (index 2)
-            // Se não for especificado, o padrão do ZPL é 'Y' (mostrar)
             const paramShowText = params[2];
             const showText = paramShowText ? paramShowText === 'Y' : true;
 
@@ -307,14 +284,11 @@ function App() {
           }
         }
       }
-      else if (command === 'BQ') { // CORREÇÃO 1: O comando base é 'BQ' (2 chars), não 'BQN'
+      else if (command === 'BQ') { 
         if ((i + 1) < commands.length && commands[i + 1].startsWith('FD')) {
-          // CORREÇÃO 2: Pega o conteúdo removendo apenas o "FD" (2 chars),
-          // sem procurar por vírgula, pois ^FDtexto não tem vírgula obrigatória.
           const qrData = commands[i + 1].substring(2);
 
           const params = data.split(',');
-          // O parametro de magnificação é geralmente o terceiro item (ex: N,2,5)
           const magnification = parseInt(params[2], 10) || 5;
 
           newElements.push({
@@ -325,25 +299,21 @@ function App() {
             y: y_px,
             magnification: magnification,
           });
-          i++; // Pula o comando ^FD que já foi usado
+          i++; 
         }
       }
     }
     setElements(newElements);
     setZplToImport("");
   };
-  // --- FIM: LÓGICA DE IMPORTAÇÃO ZPL CORRIGIDA ---
-
 
   const handleGenerateCode = () => {
-    // Validação inicial
     if (elements.length === 0) {
       setGeneratedCode("Adicione elementos na área de desenho primeiro.");
       setGeneratedAdvpl("Adicione elementos na área de desenho primeiro.");
       return;
     }
 
-    // --- GERAÇÃO ZPL (Sua lógica existente) ---
     const zplCommands = elements.map(element => {
       const x_dots = Math.round((element.x / PIXELS_PER_MM) * DOTS_PER_MM);
       let y_dots = Math.round((element.y / PIXELS_PER_MM) * DOTS_PER_MM);
@@ -405,8 +375,6 @@ function App() {
 
     setGeneratedCode(`^XA\n${zplCommands}\n^XZ`);
 
-    // --- GERAÇÃO ADVPL (Nova Lógica) ---
-    // Chama a função importada e atualiza o novo estado
     const advplSource = generateAdvplSource(elements);
     setGeneratedAdvpl(advplSource);
   };
@@ -416,10 +384,8 @@ function App() {
   const handleThicknessChange = (value) => {
     const numericValue = Math.max(1, parseInt(value, 10) || 1);
 
-    // Atualiza o estado do input
     setElementThickness(numericValue);
 
-    // Atualiza o elemento no array de elementos
     if (selectedElementId) {
       setElements(prev =>
         prev.map(el => {
@@ -639,7 +605,6 @@ function App() {
                   fontSize: `${element.fontHeight}px`,
                 };
 
-                // Cálculo para escala horizontal da fonte
                 const fontScaleX = element.fontWidth / (element.fontHeight * 1.21);
 
                 const innerSpanStyle = {
@@ -689,7 +654,6 @@ function App() {
                 const width = Math.abs(element.x1 - element.x2);
                 const height = Math.abs(element.y1 - element.y2);
 
-                // Margem de segurança para evitar cortes no SVG se a linha for grossa
                 const padding = 20;
 
                 return (
@@ -698,11 +662,11 @@ function App() {
                       ref={setRef}
                       className={`line-container ${isSelected ? 'selected' : ''}`}
                       style={{
-                        left: left - padding, // Compensa o padding
+                        left: left - padding, 
                         top: top - padding,
-                        width: width + (padding * 2), // Aumenta a área do SVG
+                        width: width + (padding * 2),
                         height: height + (padding * 2),
-                        zIndex: isSelected ? 1000 : 1 // Garante que a linha selecionada fique acessível
+                        zIndex: isSelected ? 1000 : 1
                       }}
                     >
                       <svg
@@ -710,19 +674,19 @@ function App() {
                         height="100%"
                         style={{ overflow: 'visible' }}
                       >
-                        {/* 1. LINHA INVISÍVEL (ÁREA DE CLIQUE) - GROSSA (20px) */}
+                        {}
                         <line
                           x1={(element.x1 - left) + padding}
                           y1={(element.y1 - top) + padding}
                           x2={(element.x2 - left) + padding}
                           y2={(element.y2 - top) + padding}
                           stroke="transparent"
-                          strokeWidth="20"  /* A mágica acontece aqui: área de clique enorme */
+                          strokeWidth="20"  
                           style={{ cursor: 'move', pointerEvents: 'stroke' }}
                           onMouseDown={(e) => handleMouseDown(e, element.id, 'line-body')}
                         />
 
-                        {/* 2. LINHA VISÍVEL - FINA (A que será impressa) */}
+                        {}
                         <line
                           x1={(element.x1 - left) + padding}
                           y1={(element.y1 - top) + padding}
@@ -730,7 +694,7 @@ function App() {
                           y2={(element.y2 - top) + padding}
                           stroke="black"
                           strokeWidth={element.thickness}
-                          style={{ pointerEvents: 'none' }} /* O clique passa por ela e vai para a invisível */
+                          style={{ pointerEvents: 'none' }} 
                         />
                       </svg>
                     </div>
@@ -753,7 +717,6 @@ function App() {
                 );
               }
 
-              // --- QUADRADOS (Vazio e Preenchido) ---
               if (element.type === 'square' || element.type === 'filled-square') {
                 return (
                   <div
@@ -775,7 +738,6 @@ function App() {
                 );
               }
 
-              // --- QR CODE ---
               if (element.type === 'qrcode') {
                 const qrSize = element.magnification * 13;
                 return (
@@ -797,9 +759,9 @@ function App() {
                 );
               }
 
-              // --- CÓDIGO DE BARRAS ---
+
               if (element.type === 'barcode') {
-                // Cálculo visual da largura da barra para corresponder ao ZPL
+
                 const visualBarWidth = (element.barWidth || 2) * 0.75;
 
                 return (
@@ -830,7 +792,7 @@ function App() {
               return null;
             })}
 
-            {/* --- LINHAS DE ALINHAMENTO (SNAP LINES) --- */}
+            {}
             {snapLines.map((line, index) => {
               if (line.type === 'vertical') {
                 return <div key={index} className="snap-line vertical" style={{ left: line.x }} />;
@@ -844,7 +806,7 @@ function App() {
         </div>
         <div className="code-pane">
           
-          {/* SEÇÃO 1: IMPORTAÇÃO */}
+          {}
           <div className="pane-section import-section">
             <div className="section-header">
               <h2><Download size={16} /> Importar ZPL</h2>
@@ -862,7 +824,7 @@ function App() {
             </div>
           </div>
 
-          {/* SEÇÃO 2: ZPL GERADO (Botão Gerar movido para cá) */}
+          {}
           <div className="pane-section output-section">
             <div className="section-header">
               <h2><FileCode size={16} /> Código ZPL Gerado</h2>
@@ -875,11 +837,11 @@ function App() {
             </div>
           </div>
 
-          {/* SEÇÃO 3: ADVPL GERADO (Correção de Layout) */}
+          {}
           <div className="pane-section output-section flex-grow">
             <div className="section-header">
               <h2><Code2 size={16} /> Código ADVPL Gerado</h2>
-              {/* Botão de copiar opcional, se quiser adicionar futuramente */}
+              {}
             </div>
             <div className="textarea-wrapper">
               <textarea readOnly value={generatedAdvpl} spellCheck="false" />

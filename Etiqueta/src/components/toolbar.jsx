@@ -4,7 +4,6 @@ import { Type, Minus, Square, QrCode, Barcode, Trash2, Play, BoxSelect } from 'l
 import './Toolbar.css';
 
 import TextProperties from './PropertyPanels/TextProperties';
-// ... outros imports
 
 function Toolbar({
   onAddText, onAddLine, onAddSquare, onAddFilledSquare,
@@ -44,10 +43,10 @@ function Toolbar({
 
         {selectedElement && (
           <>
-            {/* --- BLOCO DE POSIÇÃO (X/Y) --- */}
+            {}
             {(selectedType === 'line' || selectedType === 'square' || selectedType === 'filled-square') ? (
               <div className="prop-row" style={{ gap: '15px' }}>
-                {/* Inputs de Posição (mantive os existentes do seu código) */}
+                {}
                 <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
                   <label style={{ color: '#2563eb' }}>Início:</label>
                   <label>X</label>
@@ -79,7 +78,6 @@ function Toolbar({
                 </div>
               </div>
             ) : (
-              /* Inputs simples de X/Y para Texto/Qrcode etc */
               <div className="prop-row">
                 <label>X:</label>
                 <input type="number" className="manual-input" value={selectedElement.x ?? ''} onChange={(e) => onPositionChange('x', e.target.value)} />
@@ -88,7 +86,7 @@ function Toolbar({
               </div>
             )}
 
-            {/* --- NOVO: BLOCO DE ESPESSURA (Apenas para Line e Square) --- */}
+            {}
             {(selectedType === 'line' || selectedType === 'square') && (
               <>
                 <div className="vertical-divider"></div>
@@ -124,7 +122,7 @@ function Toolbar({
                 value={qrCodeMagnification}
                 onChange={(e) => onQRCodeChange('magnification', e.target.value)}
               />
-              {/* Adicionado Label Dados e Input maior */}
+              {}
               <label>Dados:</label>
               <input
                 type="text"
@@ -153,7 +151,7 @@ function Toolbar({
                 onChange={(e) => onBarcodeChange('barWidth', e.target.value)}
               />
 
-              {/* Checkbox de mostrar texto */}
+              {}
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <label htmlFor="chkTxt" style={{ cursor: 'pointer' }}>Texto:</label>
                 <input
@@ -164,7 +162,7 @@ function Toolbar({
                 />
               </div>
 
-              {/* ONDE FALTAVA: Input de conteúdo do código de barras */}
+              {}
               <div className="vertical-divider" style={{ height: '15px', margin: '0 5px' }}></div>
               <label>Dados:</label>
               <input

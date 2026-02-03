@@ -10,15 +10,15 @@ export const generateAdvplSource = (elements) => {
 /*/{Protheus.doc} IMPETIQ
 Etiqueta Gerada pelo Editor Visual
 @type     function
-@author   Gerador Automatico
+@author   Juan Reis
 @since    ${currentDate}
 /*/
 
 User Function IMPETIQ()
-    Local cPorta     := "LPT1" // Ajuste conforme a porta da impressora
-    Local cConteudo  := ""
+    Local cImpressora := "000001" // Pegue uma impressora da CB5
     
-    // Inicializa a impressora (Modelo ZEBRA geralmente é 1 ou 6 dependendo da lib)
+    MSCBPRINTER(cImpressora) //Seto a impressora 
+
     MSCBBEGIN(1, 6)
 `;
 
@@ -105,7 +105,7 @@ User Function IMPETIQ()
 
   sourceCode += `
     MSCBEND()
-    MSCBPRINTER(cPorta)
+
 Return
 `;
 
